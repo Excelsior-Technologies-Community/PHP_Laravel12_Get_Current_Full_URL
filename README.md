@@ -1,59 +1,366 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PHP_Laravel12_Get_Current_Full_URL
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white">
+  <img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white">
 </p>
 
-## About Laravel
+##  Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This project provides a **complete, beginner-to-advanced documentation**
+for getting the **Current URL, Full URL, Previous URL, and Route Name**
+in **Laravel 12**.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+It covers:
+- Controller-based examples
+- Request object usage
+- URL Facade usage
+- Blade template usage
+- Passing URL data from Controller to Blade
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## FEATURES
 
-## Laravel Sponsors
+- Laravel 12 project setup
+- Get current URL (without query string)
+- Get full URL (with query string)
+- Get previous URL
+- Use Request object
+- Use URL Facade
+- Get current route name
+- Display URLs in Blade
+- Pass URL data from Controller to Blade
+- 100% copy-paste ready examples
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+##  Folder Structure
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```text
+laravel-demo/
+├── app/
+│   └── Http/
+│       └── Controllers/
+│           └── UserController.php
+│
+├── resources/
+│   └── views/
+│       └── users.blade.php
+│
+├── routes/
+│   └── web.php
+│
+├── public/
+├── config/
+├── database/
+├── storage/
+└── artisan
+```
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## STEP 1: CREATE LARAVEL PROJECT
 
-## Code of Conduct
+```bash
+composer create-project laravel/laravel laravel-demo
+```
+Run
+```bash
+php artisan serve
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## STEP 2: Environment Setup
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=laravel
+DB_USERNAME=root
+DB_PASSWORD=
 
-## License
+APP_URL=http://127.0.0.1:8000
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```
+
+Open browser:
+
+```
+http://127.0.0.1:8000
+```
+
+---
+
+## STEP 3: CREATE CONTROLLER
+
+```bash
+php artisan make:controller UserController
+```
+
+---
+
+## STEP 4: CREATE ROUTE
+
+### routes/web.php
+
+```php
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
+
+Route::get('/users', [UserController::class, 'index'])
+    ->name('users.index');
+```
+
+---
+
+## STEP 5: GET CURRENT URL (WITHOUT QUERY STRING)
+
+### app/Http/Controllers/UserController.php
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class UserController extends Controller
+{
+    public function index(Request $request)
+    {
+        $currentUrl = url()->current();
+        dd($currentUrl);
+    }
+}
+```
+
+Output:
+
+```
+http://127.0.0.1:8000/users
+```
+<img width="531" height="106" alt="Screenshot 2026-01-01 113837" src="https://github.com/user-attachments/assets/046083e9-11d7-4a6c-bf85-f7fa07a3223a" />
+
+---
+
+## STEP 6: GET FULL URL (WITH QUERY STRING)
+
+Open URL:
+
+```
+http://127.0.0.1:8000/users?page=2&status=active
+```
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class UserController extends Controller
+{
+    public function index(Request $request)
+    {
+        $fullUrl = url()->full();
+        dd($fullUrl);
+    }
+}
+```
+
+Output:
+
+```
+http://127.0.0.1:8000/users?page=2&status=active
+```
+<img width="684" height="108" alt="Screenshot 2026-01-01 113924" src="https://github.com/user-attachments/assets/388c7f27-34fd-4d5a-81fa-9fe84125b94c" />
+
+---
+
+## STEP 7: GET URL USING REQUEST OBJECT
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class UserController extends Controller
+{
+    public function index(Request $request)
+    {
+        dd(
+            $request->url(),
+            $request->fullUrl()
+        );
+    }
+}
+```
+
+---
+
+## STEP 8: GET URL USING URL FACADE
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Support\Facades\URL;
+
+class UserController extends Controller
+{
+    public function index()
+    {
+        dd(
+            URL::current(),
+            URL::full()
+        );
+    }
+}
+```
+
+---
+
+## STEP 9: GET PREVIOUS URL
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+class UserController extends Controller
+{
+    public function index()
+    {
+        $previousUrl = url()->previous();
+        dd($previousUrl);
+    }
+}
+```
+
+---
+
+## STEP 10: GET CURRENT ROUTE NAME
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Support\Facades\Route;
+
+class UserController extends Controller
+{
+    public function index()
+    {
+        $routeName = Route::current()->getName();
+        dd($routeName);
+    }
+}
+```
+
+Output:
+
+```
+users.index
+```
+<img width="506" height="98" alt="Screenshot 2026-01-01 114445" src="https://github.com/user-attachments/assets/d7abc465-008a-4e85-a7fb-fe45d787caba" />
+
+---
+
+## STEP 11: CREATE BLADE FILE
+
+```bash
+touch resources/views/users.blade.php
+```
+
+---
+
+## STEP 12: SHOW URLS IN BLADE
+
+### Controller
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+class UserController extends Controller
+{
+    public function index()
+    {
+        return view('users');
+    }
+}
+```
+
+### Blade: 
+
+resources/views/users.blade.php
+```blade
+<p>Current URL: {{ url()->current() }}</p> 
+<p>Full URL: {{ url()->full() }}</p> 
+<p>Previous URL: {{ url()->previous() }}</p>
+
+```
+<img width="353" height="170" alt="Screenshot 2026-01-01 115352" src="https://github.com/user-attachments/assets/5875bdd7-8113-469b-b082-01190903d55e" />
+
+---
+
+## STEP 13: PASS DATA FROM CONTROLLER TO BLADE
+
+### Controller
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+class UserController extends Controller
+{
+    public function index()
+    {
+        return view('users', [
+            'current'  => url()->current(),
+            'full'     => url()->full(),
+            'previous' => url()->previous(),
+        ]);
+    }
+}
+```
+
+### Blade
+
+resources/views/users.blade.php
+```blade
+{{ $current }} 
+{{ $full }} 
+{{ $previous }} 
+
+```
+<img width="563" height="108" alt="Screenshot 2026-01-01 115507" src="https://github.com/user-attachments/assets/55a13aff-a2d0-490d-ac34-e34ea464c98e" />
+
+---
+
+## QUICK CHEAT SHEET
+
+| Task | Code |
+|----|----|
+| Current URL | `url()->current()` |
+| Full URL | `url()->full()` |
+| Previous URL | `url()->previous()` |
+| Request URL | `$request->url()` |
+| Request Full URL | `$request->fullUrl()` |
+| Route Name | `Route::current()->getName()` |
+
+---
