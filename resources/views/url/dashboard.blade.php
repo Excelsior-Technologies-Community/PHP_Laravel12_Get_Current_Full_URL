@@ -120,6 +120,13 @@
             </a>
 
             <a
+                href="{{ route('url.tools') }}"
+                class="btn btn-success btn-sm me-1"
+            >
+                URL Tools
+            </a>
+
+            <a
                 href="{{ route('route.info') }}"
                 class="btn btn-info btn-sm me-1"
             >
