@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
+use App\Models\ShortUrl;
 
 class UrlInspectorController extends Controller
 {
@@ -499,6 +502,209 @@ class UrlInspectorController extends Controller
             'protocol' => $request->getScheme(),
 
         ]);
+    }
+
+    public function tools()
+    {
+        return view('url.tools');
+    }
+
+    public function slug(Request $request)
+    {
+        $text = (string) $request->input('text', '');
+        $slug = trim(preg_replace('/[^a-z0-9]+/i', '-', strtolower($text)), '-');
+
+        return view('url.tools', compact('text', 'slug'));
+    }
+
+    public function shorten(Request $request)
+    {
+        $data = $request->validate([
+            'url' => ['required', 'url', 'max:2048'],
+        ]);
+
+        $shortUrl = ShortUrl::create([
+            'code' => substr(str_replace(['+', '/', '='], '', base64_encode(random_bytes(9))), 0, 10),
+            'url' => $data['url'],
+        ]);
+
+        return view('url.tools', compact('shortUrl'));
+    }
+
+    public function redirectShortUrl(string $code)
+    {
+        $shortUrl = ShortUrl::where('code', $code)->firstOrFail();
+
+        return redirect()->away($shortUrl->url);
+    }
+
+    public function queryTools(Request $request)
+    {
+        $baseUrl = (string) $request->input('base_url', '');
+        $parameters = array_values(array_filter($request->input('parameters', []), fn ($parameter) =>
+            filled($parameter['key'] ?? null)
+        ));
+        $generatedUrl = $baseUrl !== ''
+            ? rtrim($baseUrl, '?&') . (count($parameters) ? '?' . http_build_query(array_column($parameters, 'value', 'key')) : '')
+            : '';
+
+        return view('url.tools', compact('baseUrl', 'parameters', 'generatedUrl'));
+    }
+
+    public function pagination(Request $request)
+    {
+        $data = $request->validate([
+            'url' => ['required', 'url', 'max:2048'],
+            'page' => ['required', 'integer', 'min:1'],
+            'limit' => ['required', 'integer', 'min:1'],
+        ]);
+        $generatedUrl = $data['url'] . (str_contains($data['url'], '?') ? '&' : '?') . http_build_query([
+            'page' => $data['page'],
+            'limit' => $data['limit'],
+        ]);
+
+        return view('url.tools', compact('generatedUrl'));
+    }
+
+    public function signed(Request $request)
+    {
+        $destination = $request->input('url', url('/url-tools'));
+        $expires = now()->addMinutes((int) $request->input('minutes', 30));
+        $signedUrl = URL::temporarySignedRoute('url.signed.destination', $expires, [
+            'destination' => rtrim(strtr(base64_encode($destination), '+/', '-_'), '='),
+        ]);
+
+        return view('url.tools', compact('signedUrl'));
+    }
+
+    public function signedDestination(Request $request)
+    {
+        abort_unless($request->hasValidSignature(), 403);
+
+        return redirect()->away(base64_decode(strtr($request->route('destination'), '-_', '+/')));
+    }
+
+    public function verifySigned(Request $request)
+    {
+        $signedUrl = (string) $request->input('signed_url', '');
+        $signedRequest = Request::create($signedUrl);
+
+        return view('url.tools', [
+            'verificationResult' => $signedUrl !== '' && URL::hasValidSignature($signedRequest),
+        ]);
+    }
+
+    public function redirectChain(Request $request)
+    {
+        $url = (string) $request->input('url', '');
+        $chain = $url !== '' ? $this->followRedirects($url) : [];
+
+        return view('url.tools', compact('chain'));
+    }
+
+    public function compare(Request $request)
+    {
+        $firstUrl = (string) $request->input('first_url', '');
+        $secondUrl = (string) $request->input('second_url', '');
+
+        return view('url.tools', [
+            'comparison' => $this->compareUrls($firstUrl, $secondUrl),
+        ]);
+    }
+
+    public function audit(Request $request)
+    {
+        $url = (string) $request->input('url', '');
+        $audit = $this->auditUrl($url);
+
+        return view('url.tools', compact('audit'));
+    }
+
+    public function export(Request $request)
+    {
+        $audit = $this->auditUrl((string) $request->input('url', ''));
+
+        if ($request->input('format') === 'csv') {
+            $csv = "key,value\n";
+            foreach ($audit as $key => $value) {
+                $csv .= sprintf("%s,%s\n", $key, str_replace(["\r", "\n", '"'], ['', '', '""'], (string) $value));
+            }
+
+            return response($csv, 200, ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="url-audit.csv"']);
+        }
+
+        return response()->json($audit, 200, ['Content-Disposition' => 'attachment; filename="url-audit.json"']);
+    }
+
+    private function followRedirects(string $url): array
+    {
+        $chain = [];
+
+        for ($step = 0; $step < 10 && filter_var($url, FILTER_VALIDATE_URL); $step++) {
+            try {
+                $response = Http::timeout(5)->withOptions(['allow_redirects' => false])->get($url);
+            } catch (\Throwable $exception) {
+                $chain[] = ['url' => $url, 'status' => 'error', 'location' => $exception->getMessage()];
+                break;
+            }
+
+            $location = $response->header('Location');
+            $chain[] = ['url' => $url, 'status' => $response->status(), 'location' => $location];
+            if (!$location) {
+                break;
+            }
+            $url = $this->resolveUrl($url, $location);
+        }
+
+        return $chain;
+    }
+
+    private function resolveUrl(string $baseUrl, string $location): string
+    {
+        if (filter_var($location, FILTER_VALIDATE_URL)) {
+            return $location;
+        }
+
+        $base = parse_url($baseUrl);
+        $origin = ($base['scheme'] ?? 'https') . '://' . ($base['host'] ?? '');
+
+        return str_starts_with($location, '/')
+            ? $origin . $location
+            : $origin . '/' . ltrim(dirname($base['path'] ?? '/') . '/' . $location, '/');
+    }
+
+    private function compareUrls(string $firstUrl, string $secondUrl): array
+    {
+        $first = parse_url($firstUrl) ?: [];
+        $second = parse_url($secondUrl) ?: [];
+        $keys = ['scheme', 'host', 'port', 'path', 'query', 'fragment'];
+
+        return collect($keys)->mapWithKeys(fn ($key) => [$key => [
+            'first' => $first[$key] ?? '',
+            'second' => $second[$key] ?? '',
+            'same' => ($first[$key] ?? '') === ($second[$key] ?? ''),
+        ]])->all();
+    }
+
+    private function auditUrl(string $url): array
+    {
+        $parsed = parse_url($url) ?: [];
+        $query = [];
+        parse_str($parsed['query'] ?? '', $query);
+
+        return [
+            'url' => $url,
+            'valid' => filter_var($url, FILTER_VALIDATE_URL) !== false,
+            'scheme' => $parsed['scheme'] ?? '',
+            'host' => $parsed['host'] ?? '',
+            'path' => $parsed['path'] ?? '/',
+            'query' => $parsed['query'] ?? '',
+            'fragment' => $parsed['fragment'] ?? '',
+            'query_count' => count($query),
+            'slug' => trim(preg_replace('/[^a-z0-9]+/i', '-', strtolower($parsed['path'] ?? '')), '-'),
+            'length' => strlen($url),
+            'redirect_chain' => json_encode($this->followRedirects($url)),
+        ];
     }
 }
 
